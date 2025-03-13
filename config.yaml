@@ -1,0 +1,53 @@
+version: 2
+tools:
+  niri-validate: &niri-validate
+    lint-command: |
+      niri validate --json --config ${INPUT} 2>/dev/null |
+        jq -r '
+          def severity(s):
+            { "advice": "i"
+            , "warning": "w"
+            , "error": "e"
+            }[s]
+          ;
+          
+          def span($span):
+            "\($span.line + 1):\($span.col + 1)"
+          ;
+          
+          def header($report):
+            " H"
+            + " \(severity($report.severity))"
+            + " [\(span(.span.start))|\(span(.span.end))]"
+            + " \($report.filename)"
+          ;
+          
+          def message(f):
+            f
+            | split("\n")[]
+            | " M " + .
+          ;
+          
+          def finish:
+            " E "
+          ;
+          
+          recurse(.related[])
+          | . as $report
+          | .labels[]
+          | header($report)
+          , message($report.message,.label)
+          , finish
+      '
+    lint-on-save: true
+    lint-after-open: true
+    lint-ignore-exit-code: true
+    lint-formats:
+      - '%A H %t [%l:%c|%e:%k] %f'
+      - '%C M %m'
+      - '%Z E '
+    root-markers:
+      - /config.kdl
+languages:
+  kdl:
+    - <<: *niri-validate
