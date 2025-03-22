@@ -2,7 +2,7 @@ version: 2
 tools:
   niri-validate: &niri-validate
     lint-command: |
-      niri validate --json --config ${INPUT} 2>/dev/null |
+      niri validate --json --compute-line-spans --config ${INPUT} 2>/dev/null |
         jq -r '
           def severity(s):
             { "advice": "i"
